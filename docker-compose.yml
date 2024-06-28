@@ -1,0 +1,6 @@
+﻿services:
+  ress:
+    image: ress
+    build:
+      context: .
+      dockerfile: Ress/Dockerfile
