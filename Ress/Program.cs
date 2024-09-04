@@ -16,7 +16,6 @@ internal static class Program
     private static Logger _logger = null!;
     private static string _feedUri = null!;
     private static DiscordWebhookClient _webhookClient = null!;
-    private static Timer _timer = null!;
     private static DateTimeOffset _lastUpdatedTime;
 
     private static async Task Main()
@@ -49,9 +48,9 @@ internal static class Program
             return Task.CompletedTask;
         };
 
-        _timer = new Timer(TimeSpan.FromSeconds(5));
-        _timer.Elapsed += UpdateFeed;
-        _timer.Start();
+        var timer = new Timer(TimeSpan.FromSeconds(5));
+        timer.Elapsed += UpdateFeed;
+        timer.Start();
 
         _lastUpdatedTime = DateTimeOffset.MinValue;
 
