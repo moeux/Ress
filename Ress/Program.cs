@@ -45,7 +45,7 @@ internal static class Program
 
         _webhookClient.Log += message =>
         {
-            Console.WriteLine(message.ToString());
+            _logger.Information("{Message}", message);
             return Task.CompletedTask;
         };
 
@@ -55,9 +55,8 @@ internal static class Program
 
         _lastUpdatedTime = DateTimeOffset.MinValue;
 
-        Console.WriteLine("Client initialized.\nFeed URI: {0}\nTimer Interval: {1}",
-            _feedUri,
-            TimeSpan.FromMilliseconds(_timer.Interval).ToString());
+        _logger.Information("Client initialized. Feed URI: {FeedUri}, Timer Interval: {TimerInterval}", _feedUri,
+            _timer.Interval);
 
         await Task.Delay(Timeout.Infinite);
     }
@@ -77,7 +76,7 @@ internal static class Program
 
         if (_lastUpdatedTime.CompareTo(lastUpdatedTime) >= 0) return;
 
-        Console.WriteLine("Detected a feed update.");
+        _logger.Information("Detected a feed update");
         SendMessage(syndicationFeed);
 
         _lastUpdatedTime = lastUpdatedTime;
@@ -90,12 +89,9 @@ internal static class Program
         if (embeds.Count != 0)
         {
             _webhookClient.SendMessageAsync(embeds: embeds);
-            Console.WriteLine($"Sent {embeds.Count} new items.");
         }
-        else
-        {
-            Console.WriteLine("Sent no new items.");
-        }
+
+        _logger.Information("Sent {Count} new items", embeds.Count);
     }
 
     private static List<Embed> CreateMessage(SyndicationFeed syndicationFeed)
