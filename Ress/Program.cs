@@ -54,8 +54,9 @@ internal static class Program
 
         _lastUpdatedTime = DateTimeOffset.MinValue;
 
-        _logger.Information("Client initialized. Feed URI: {FeedUri}, Timer Interval: {TimerInterval}", _feedUri,
-            _timer.Interval);
+        _logger.Information("Client initialized with Feed URI: {FeedUri} and Timer Interval: {TimerInterval}",
+            _feedUri,
+            timer.Interval);
 
         await Task.Delay(Timeout.Infinite);
     }
@@ -85,10 +86,7 @@ internal static class Program
     {
         var embeds = CreateMessage(syndicationFeed);
 
-        if (embeds.Count != 0)
-        {
-            _webhookClient.SendMessageAsync(embeds: embeds);
-        }
+        if (embeds.Count != 0) _webhookClient.SendMessageAsync(embeds: embeds);
 
         _logger.Information("Sent {Count} new items", embeds.Count);
     }
