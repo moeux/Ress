@@ -5,22 +5,44 @@ using System.Xml;
 using System.Xml.Linq;
 using Discord;
 using Discord.Webhook;
+using Serilog;
+using Serilog.Core;
 using Timer = System.Timers.Timer;
 
 namespace Ress;
 
 internal static class Program
 {
-    private static string _feedUri;
-    private static DiscordWebhookClient _webhookClient;
-    private static Timer _timer;
+    private static Logger _logger = null!;
+    private static string _feedUri = null!;
+    private static DiscordWebhookClient _webhookClient = null!;
+    private static Timer _timer = null!;
     private static DateTimeOffset _lastUpdatedTime;
 
     private static async Task Main()
     {
-        _feedUri = Environment.GetEnvironmentVariable("RESS_FEED_URI");
+        _logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
 
-        _webhookClient = new DiscordWebhookClient(Environment.GetEnvironmentVariable("RESS_WEBHOOK_URI"));
+        if (TryGetEnvironmentVariable("RESS_FEED_URI", out var feedUri))
+        {
+            _feedUri = feedUri;
+        }
+        else
+        {
+            _logger.Fatal("`RESS_FEED_URI` environment variable is not set");
+            return;
+        }
+
+        if (TryGetEnvironmentVariable("RESS_WEBHOOK_URI", out var webhookUri))
+        {
+            _webhookClient = new DiscordWebhookClient(webhookUri);
+        }
+        else
+        {
+            _logger.Fatal("`RESS_WEBHOOK_URI` environment variable is not set");
+            return;
+        }
+
         _webhookClient.Log += message =>
         {
             Console.WriteLine(message.ToString());
