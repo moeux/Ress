@@ -40,6 +40,13 @@ internal static class Program
         await Task.Delay(Timeout.Infinite);
     }
 
+    private static bool TryGetEnvironmentVariable(string name, out string value)
+    {
+        value = Environment.GetEnvironmentVariable(name)!;
+
+        return !string.IsNullOrEmpty(value);
+    }
+
     private static void UpdateFeed(object? sender, ElapsedEventArgs e)
     {
         var xmlReader = XmlReader.Create(_feedUri);
