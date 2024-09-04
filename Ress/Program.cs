@@ -1,6 +1,5 @@
 ﻿using System.ServiceModel.Syndication;
 using System.Text;
-using System.Timers;
 using System.Xml;
 using System.Xml.Linq;
 using Discord;
@@ -49,7 +48,7 @@ internal static class Program
         };
 
         var timer = new Timer(TimeSpan.FromSeconds(5));
-        timer.Elapsed += UpdateFeedAsync;
+        timer.Elapsed += async (_, _) => await UpdateFeedAsync();
         timer.Start();
 
         _lastUpdatedTime = DateTimeOffset.MinValue;
@@ -68,7 +67,7 @@ internal static class Program
         return !string.IsNullOrEmpty(value);
     }
 
-    private static async void UpdateFeedAsync(object? sender, ElapsedEventArgs elapsedEventArgs)
+    private static async Task UpdateFeedAsync()
     {
         var xmlReader = XmlReader.Create(_feedUri);
         var syndicationFeed = SyndicationFeed.Load(xmlReader);
@@ -121,7 +120,7 @@ internal static class Program
             foreach (var chunk in embeds.Chunk(EmbedLimit.Count))
                 if (chunk.Select(embed => embed.Length).Sum() > EmbedLimit.Total)
                     await Task.WhenAll(chunk
-                        .Select(embed => _webhookClient.SendMessageAsync(embeds: [embed]))
+                        .Select(async embed => await _webhookClient.SendMessageAsync(embeds: [embed]))
                         .ToArray<Task>());
                 else
                     await _webhookClient.SendMessageAsync(embeds: chunk);
