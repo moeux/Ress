@@ -15,4 +15,11 @@ public static class StringExtensions
     {
         return Converter.Convert(str);
     }
+
+    public static string Truncate(this string str, int length, int padding = 2)
+    {
+        if (string.IsNullOrWhiteSpace(str) || str.Length <= length) return str;
+
+        return str[..(length - padding)].PadRight(padding, '.');
+    }
 }
