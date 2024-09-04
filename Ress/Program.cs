@@ -49,12 +49,12 @@ internal static class Program
         };
 
         var timer = new Timer(TimeSpan.FromSeconds(5));
-        timer.Elapsed += UpdateFeed;
+        timer.Elapsed += UpdateFeedAsync;
         timer.Start();
 
         _lastUpdatedTime = DateTimeOffset.MinValue;
 
-        _logger.Information("Client initialized with Feed URI: {FeedUri} and Timer Interval: {TimerInterval}",
+        _logger.Information("Client initialized with Feed URI: {FeedUri} and Timer Interval: {TimerInterval} ms",
             _feedUri,
             timer.Interval);
 
@@ -68,7 +68,7 @@ internal static class Program
         return !string.IsNullOrEmpty(value);
     }
 
-    private static void UpdateFeed(object? sender, ElapsedEventArgs e)
+    private static async void UpdateFeedAsync(object? sender, ElapsedEventArgs elapsedEventArgs)
     {
         var xmlReader = XmlReader.Create(_feedUri);
         var syndicationFeed = SyndicationFeed.Load(xmlReader);
@@ -77,18 +77,9 @@ internal static class Program
         if (_lastUpdatedTime.CompareTo(lastUpdatedTime) >= 0) return;
 
         _logger.Information("Detected a feed update");
-        SendMessage(syndicationFeed);
+        await SendMessageAsync(CreateMessage(syndicationFeed));
 
         _lastUpdatedTime = lastUpdatedTime;
-    }
-
-    private static void SendMessage(SyndicationFeed syndicationFeed)
-    {
-        var embeds = CreateMessage(syndicationFeed);
-
-        if (embeds.Count != 0) _webhookClient.SendMessageAsync(embeds: embeds);
-
-        _logger.Information("Sent {Count} new items", embeds.Count);
     }
 
     private static List<Embed> CreateMessage(SyndicationFeed syndicationFeed)
@@ -111,15 +102,30 @@ internal static class Program
 
             embeds.Add(new EmbedBuilder
             {
-                Title = (item.Title?.Text ?? "No Title.").ToMarkdown(),
-                Description = descriptionBuilder.ToString().ToMarkdown(),
+                Title = (item.Title?.Text ?? "No Title.").ToMarkdown().Truncate(EmbedLimit.Title),
+                Description = descriptionBuilder.ToString().ToMarkdown().Truncate(EmbedLimit.Description),
                 Url = item.Links.FirstOrDefault()?.Uri?.ToString(),
                 Timestamp = item.PublishDate,
                 Color = new Color(4, 99, 115),
-                Footer = new EmbedFooterBuilder().WithText(item.Categories.FirstOrDefault()?.Name ?? "")
+                Footer = new EmbedFooterBuilder().WithText(
+                    item.Categories.FirstOrDefault()?.Name.Truncate(EmbedLimit.Footer) ?? "")
             }.Build());
         }
 
         return embeds;
+    }
+
+    private static async Task SendMessageAsync(ICollection<Embed> embeds)
+    {
+        if (embeds.Count > 0)
+            foreach (var chunk in embeds.Chunk(EmbedLimit.Count))
+                if (chunk.Select(embed => embed.Length).Sum() > EmbedLimit.Total)
+                    await Task.WhenAll(chunk
+                        .Select(embed => _webhookClient.SendMessageAsync(embeds: [embed]))
+                        .ToArray<Task>());
+                else
+                    await _webhookClient.SendMessageAsync(embeds: chunk);
+
+        _logger.Information("Sent {Count} new items", embeds.Count);
     }
 }
