@@ -4,3 +4,6 @@
     build:
       context: .
       dockerfile: Ress/Dockerfile
+    environment:
+      RESS_FEED_URI: ""
+      RESS_WEBHOOK_URI: ""
