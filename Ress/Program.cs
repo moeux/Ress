@@ -119,8 +119,11 @@ internal static class Program
 
     private static void AddEmbedsToSentEmbeds(params Embed[] embeds)
     {
-        foreach (var embed in embeds)
-            _sentEmbedsHashCodes.Add(embed.GetHashCode());
+        lock (_sentEmbedsHashCodes)
+        {
+            foreach (var embed in embeds)
+                _sentEmbedsHashCodes.Add(embed.GetHashCode());
+        }
     }
 
     private static async Task SendMessageAsync(ICollection<Embed> embeds)
