@@ -1,4 +1,5 @@
-﻿using System.ServiceModel.Syndication;
+﻿using System.Collections.Immutable;
+using System.ServiceModel.Syndication;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -16,6 +17,7 @@ internal static class Program
     private static string _feedUri = null!;
     private static DiscordWebhookClient _webhookClient = null!;
     private static DateTimeOffset _lastUpdatedTime;
+    private static HashSet<int> _sentEmbedsHashCodes = null!;
 
     private static async Task Main()
     {
@@ -52,6 +54,7 @@ internal static class Program
         timer.Start();
 
         _lastUpdatedTime = DateTimeOffset.MinValue;
+        _sentEmbedsHashCodes = [];
 
         _logger.Information("Client initialized with Feed URI: {FeedUri} and Timer Interval: {TimerInterval} ms",
             _feedUri,
@@ -114,10 +117,19 @@ internal static class Program
         return embeds;
     }
 
+    private static void AddEmbedsToSentEmbeds(params Embed[] embeds)
+    {
+        foreach (var embed in embeds)
+            _sentEmbedsHashCodes.Add(embed.GetHashCode());
+    }
+
     private static async Task SendMessageAsync(ICollection<Embed> embeds)
     {
-        if (embeds.Count > 0)
-            foreach (var chunk in embeds.Chunk(EmbedLimit.Count))
+        var embedsToSend = embeds.ExceptBy(_sentEmbedsHashCodes, embed => embed.GetHashCode()).ToImmutableArray();
+
+        if (embedsToSend.Length > 0)
+            foreach (var chunk in embedsToSend.Chunk(EmbedLimit.Count))
+            {
                 if (chunk.Select(embed => embed.Length).Sum() > EmbedLimit.Total)
                     await Task.WhenAll(chunk
                         .Select(async embed => await _webhookClient.SendMessageAsync(embeds: [embed]))
@@ -125,6 +137,9 @@ internal static class Program
                 else
                     await _webhookClient.SendMessageAsync(embeds: chunk);
 
-        _logger.Information("Sent {Count} new items", embeds.Count);
+                AddEmbedsToSentEmbeds(chunk);
+            }
+
+        _logger.Information("Sent {Count} new items", embedsToSend.Length);
     }
 }
