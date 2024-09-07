@@ -76,12 +76,12 @@ internal static class Program
         if (_lastUpdatedTime.CompareTo(lastUpdatedTime) >= 0) return;
 
         _logger.Information("Detected a feed update");
-        await SendMessageAsync(CreateMessage(syndicationFeed.Items));
+        await SendMessageAsync(CreateEmbeds(syndicationFeed.Items));
 
         _lastUpdatedTime = lastUpdatedTime;
     }
 
-    private static List<Embed> CreateMessage(IEnumerable<SyndicationItem> items)
+    private static List<Embed> CreateEmbeds(IEnumerable<SyndicationItem> items)
     {
         var embeds = new List<Embed>();
 
