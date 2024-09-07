@@ -18,6 +18,7 @@ internal static class Program
     private static DiscordWebhookClient _webhookClient = null!;
     private static DateTimeOffset _lastUpdatedTime;
     private static HashSet<int> _sentEmbedsHashCodes = null!;
+    private static readonly object LockObject = new();
 
     private static async Task Main()
     {
@@ -119,7 +120,7 @@ internal static class Program
 
     private static void AddEmbedsToSentEmbeds(params Embed[] embeds)
     {
-        lock (_sentEmbedsHashCodes)
+        lock (LockObject)
         {
             foreach (var embed in embeds)
                 _sentEmbedsHashCodes.Add(embed.GetHashCode());
