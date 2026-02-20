@@ -2,6 +2,9 @@
 
 ReSS is a very simple Discord webhook application allowing you to send RSS feed messages.
 
+> [!WARNING]
+> This repository has been archived. If you still want RSS functionality on your Discord server, please take a look at [Courier](https://github.com/moeux/Courier).
+
 # Requirements
 This application uses [Docker Compose](https://docs.docker.com/compose/install/).
 
